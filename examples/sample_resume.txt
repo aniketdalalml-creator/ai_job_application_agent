@@ -1,0 +1,15 @@
+Aniket — Machine Learning Engineer
+
+Summary
+ML engineer with experience building Python services, LLM applications, and data pipelines.
+Comfortable turning messy inputs into structured outputs and shipping production APIs.
+
+Experience
+- Built multi-step LLM workflows (research → structure → generate → critique) for document automation
+- Designed RAG pipelines over internal knowledge bases using embeddings and vector search
+- Shipped FastAPI services with automated tests and CI
+- Used OpenAI-compatible APIs for chat completions and JSON-mode structured extraction
+- Collaborated with product stakeholders to map requirements to measurable model behaviors
+
+Skills
+Python, PyTorch, FastAPI, RAG, prompt engineering, SQL, Docker, Git

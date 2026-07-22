@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "job-agent"
+version = "0.1.0"
+description = "Multi-agent cover letter pipeline powered by Groq"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "groq>=0.29.0",
+  "ddgs>=9.0.0",
+  "pydantic>=2.0.0",
+  "python-dotenv>=1.0.0",
+  "rich>=13.0.0",
+]
+
+[project.scripts]
+job-agent = "job_agent.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["job_agent*"]

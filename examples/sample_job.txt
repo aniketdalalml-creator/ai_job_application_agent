@@ -1,0 +1,14 @@
+Senior Machine Learning Engineer
+
+We're looking for an ML Engineer to build production LLM applications and retrieval systems.
+
+Requirements:
+- 3+ years Python experience
+- Experience with LLMs, prompt engineering, and RAG pipelines
+- Strong software engineering practices (testing, APIs, CI)
+- Ability to research companies and turn unstructured information into structured outputs
+- Excellent written communication
+
+Nice to have:
+- Experience with Groq, OpenAI, or similar inference APIs
+- LangChain / agentic workflows
