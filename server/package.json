@@ -8,11 +8,11 @@
     "dev": "node --watch src/index.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "duck-duck-scrape": "^2.2.7",
     "express": "^4.21.2",
+    "groq-sdk": "^0.15.0",
     "uuid": "^11.0.5"
   }
 }

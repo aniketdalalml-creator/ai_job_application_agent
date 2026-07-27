@@ -109,8 +109,8 @@ export default function App() {
           <p className="eyebrow">Multi-agent pipeline</p>
           <h1>AI Job Application Agent</h1>
           <p className="subtitle">
-            Researcher and Writer agents with Claude tool-calling, live web search, structured JSON
-            handoff, and async Express job queue.
+            Researcher and Writer agents with Groq, live web search, structured JSON handoff, and
+            async Express job queue.
           </p>
         </div>
         <div className="status-pill">{run?.status || "idle"}</div>

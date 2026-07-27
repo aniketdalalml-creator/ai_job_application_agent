@@ -1,11 +1,11 @@
-import { createMessage, extractJson } from "./claude.js";
+import { chatCompletion, extractJson } from "./llm.js";
 
 const DRAFT_SYSTEM = `You are the Writer agent in a multi-agent job application pipeline.
 
 Write specific, grounded application materials using the structured company research and the candidate resume.
 Avoid generic filler. Do not invent experience beyond the resume.
 
-Return ONLY JSON (no markdown fences) with this exact shape:
+Return ONLY JSON with this exact shape:
 {
   "coverLetter": string,
   "resumeBullets": [string, ...]
@@ -40,7 +40,7 @@ Return ONLY JSON with this exact shape:
  * @param {string} resumeText
  */
 async function draftMaterials(research, jobDescription, resumeText) {
-  const response = await createMessage({
+  const text = await chatCompletion({
     system: DRAFT_SYSTEM,
     messages: [
       {
@@ -60,12 +60,8 @@ ${resumeText}
       },
     ],
     temperature: 0.5,
+    jsonMode: true,
   });
-
-  const text = response.content
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("\n");
 
   return extractJson(text);
 }
@@ -76,7 +72,7 @@ ${resumeText}
  * @param {Record<string, unknown>} draft
  */
 async function critiqueMaterials(jobDescription, resumeText, draft) {
-  const response = await createMessage({
+  const text = await chatCompletion({
     system: CRITIQUE_SYSTEM,
     messages: [
       {
@@ -96,12 +92,8 @@ ${JSON.stringify(draft, null, 2)}`,
       },
     ],
     temperature: 0.1,
+    jsonMode: true,
   });
-
-  const text = response.content
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("\n");
 
   return extractJson(text);
 }
@@ -112,7 +104,7 @@ ${JSON.stringify(draft, null, 2)}`,
  * @param {string} resumeText
  */
 async function reviseMaterials(draft, critique, resumeText) {
-  const response = await createMessage({
+  const text = await chatCompletion({
     system: REVISE_SYSTEM,
     messages: [
       {
@@ -130,12 +122,8 @@ ${resumeText}
       },
     ],
     temperature: 0.4,
+    jsonMode: true,
   });
-
-  const text = response.content
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("\n");
 
   return extractJson(text);
 }

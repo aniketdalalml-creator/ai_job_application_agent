@@ -17,7 +17,14 @@ class Settings:
     """Runtime configuration loaded from environment variables."""
 
     def __init__(self) -> None:
-        self.groq_api_key = os.getenv("GROQ_API_KEY", "").strip()
+        groq_key = os.getenv("GROQ_API_KEY", "").strip()
+        if not groq_key or "your_key" in groq_key:
+            # Allow a Groq key pasted into ANTHROPIC_API_KEY by mistake.
+            anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+            if anthropic_key.startswith("gsk_"):
+                groq_key = anthropic_key
+
+        self.groq_api_key = groq_key
         self.groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
         self.max_search_results = int(os.getenv("MAX_SEARCH_RESULTS", "8"))
         self.temperature = float(os.getenv("GROQ_TEMPERATURE", "0.4"))

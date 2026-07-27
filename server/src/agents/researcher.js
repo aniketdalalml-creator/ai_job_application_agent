@@ -1,12 +1,14 @@
-import { createMessage, extractJson } from "./claude.js";
-import { WEB_SEARCH_TOOL, webSearch } from "../tools/webSearch.js";
+import { chatCompletion, extractJson } from "./llm.js";
+import { webSearch } from "../tools/webSearch.js";
 
-const RESEARCHER_SYSTEM = `You are the Researcher agent in a multi-agent job application pipeline.
+const RESEARCH_SYSTEM = `You are a research assistant. Use the provided web search results to find recent, relevant
+information about the given company: recent news, products, mission/values, and anything notable.
+Be factual and concise. Do not invent facts not supported by the search results.`;
 
-Use the web_search tool to gather recent, factual information about the target company and role context.
-Run multiple focused searches (overview/products, recent news, culture/mission) before you finish.
+const HANDOFF_SYSTEM = `You convert raw research notes and a job description into a clean structured JSON object
+for another AI agent to use when drafting a job application.
 
-When you have enough information, respond with ONLY a JSON object (no markdown fences) in this exact shape:
+Return JSON with this exact shape:
 {
   "companyName": string,
   "companyFacts": [string, ...],
@@ -17,11 +19,11 @@ When you have enough information, respond with ONLY a JSON object (no markdown f
 }
 
 Rules:
-- companyFacts: 3-5 concrete facts grounded in search results
-- roleRequirements: 4-6 requirements extracted from the job description
+- companyFacts: 3-5 concrete facts grounded in the research notes
+- roleRequirements: 4-6 key requirements extracted from the job description
 - cultureSignals: 2-3 culture/value signals
-- sources: source domains from search results
-- researchNotes: concise bullet-style notes for debugging
+- sources: source domains from research
+- researchNotes: concise bullet-style notes
 - Do not invent unsupported company facts`;
 
 /**
@@ -37,122 +39,112 @@ export async function runResearcher(companyName, jobDescription, emit) {
     timestamp: new Date().toISOString(),
   });
 
-  /** @type {import('@anthropic-ai/sdk').MessageParam[]} */
-  const messages = [
-    {
-      role: "user",
-      content: `Research this company for a job application.
+  const queries = [
+    `${companyName} company overview products services`,
+    `${companyName} recent news 2025 2026`,
+    `${companyName} mission values culture`,
+  ];
 
-Company: ${companyName}
+  const searchLog = [];
+
+  for (const query of queries) {
+    emit({
+      type: "tool_call",
+      agent: "researcher",
+      message: `web_search("${query}")`,
+      payload: { query },
+      timestamp: new Date().toISOString(),
+    });
+
+    const bundle = await webSearch(query);
+    searchLog.push(bundle);
+
+    emit({
+      type: "tool_result",
+      agent: "researcher",
+      message: `Found ${bundle.results.length} result(s) for "${query}"`,
+      payload: bundle,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  const searchText = searchLog.map((entry) => entry.text).join("\n\n");
+  const sources = [
+    ...new Set(searchLog.flatMap((entry) => entry.results.map((item) => item.url))),
+  ]
+    .map((url) => {
+      try {
+        return new URL(url).hostname.replace(/^www\./, "");
+      } catch {
+        return url;
+      }
+    })
+    .filter(Boolean);
+
+  const notes = await chatCompletion({
+    system: RESEARCH_SYSTEM,
+    messages: [
+      {
+        role: "user",
+        content: `Research this company for a job application: ${companyName}.
+
+Web search results:
+"""
+${searchText}
+"""
+
+Write concise factual research notes (bullet points). Cite source domains inline when possible.`,
+      },
+    ],
+    temperature: 0.2,
+  });
+
+  const structured = extractJson(
+    await chatCompletion({
+      system: HANDOFF_SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: `Raw research notes:
+"""
+${notes}
+"""
+
+Known source domains: ${sources.slice(0, 8).join(", ") || "(none)"}
 
 Job description:
 """
 ${jobDescription}
 """
 
-Use web_search as needed, then return the final JSON handoff object.`,
-    },
-  ];
+Company name: ${companyName}
 
-  const searchLog = [];
-  let structured = null;
+Return only the JSON object.`,
+        },
+      ],
+      temperature: 0.1,
+      jsonMode: true,
+    }),
+  );
 
-  for (let turn = 0; turn < 8; turn += 1) {
-    const response = await createMessage({
-      system: RESEARCHER_SYSTEM,
-      tools: [WEB_SEARCH_TOOL],
-      messages,
-      temperature: 0.2,
-    });
+  if (!structured.companyName) structured.companyName = companyName;
+  if (!structured.sources?.length) structured.sources = sources.slice(0, 8);
+  if (!structured.researchNotes) structured.researchNotes = notes;
 
-    const toolUses = response.content.filter((block) => block.type === "tool_use");
-    const textBlocks = response.content.filter((block) => block.type === "text");
+  emit({
+    type: "handoff",
+    agent: "researcher",
+    message: "Structured JSON handoff ready for Writer",
+    payload: structured,
+    timestamp: new Date().toISOString(),
+  });
 
-    if (toolUses.length) {
-      messages.push({ role: "assistant", content: response.content });
+  emit({
+    type: "agent_complete",
+    agent: "researcher",
+    message: "Research complete",
+    timestamp: new Date().toISOString(),
+  });
 
-      /** @type {import('@anthropic-ai/sdk').ToolResultBlockParam[]} */
-      const toolResults = [];
-
-      for (const toolUse of toolUses) {
-        if (toolUse.name !== "web_search") continue;
-        const query =
-          typeof toolUse.input === "object" &&
-          toolUse.input &&
-          "query" in toolUse.input &&
-          typeof toolUse.input.query === "string"
-            ? toolUse.input.query
-            : `${companyName} company`;
-
-        emit({
-          type: "tool_call",
-          agent: "researcher",
-          message: `web_search("${query}")`,
-          payload: { query },
-          timestamp: new Date().toISOString(),
-        });
-
-        const bundle = await webSearch(query);
-        searchLog.push(bundle);
-
-        emit({
-          type: "tool_result",
-          agent: "researcher",
-          message: `Found ${bundle.results.length} result(s) for "${query}"`,
-          payload: bundle,
-          timestamp: new Date().toISOString(),
-        });
-
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: toolUse.id,
-          content: bundle.text,
-        });
-      }
-
-      messages.push({ role: "user", content: toolResults });
-      continue;
-    }
-
-    const text = textBlocks.map((block) => block.text).join("\n").trim();
-    if (!text) {
-      throw new Error("Researcher returned an empty response");
-    }
-
-    structured = extractJson(text);
-    if (!structured.companyName) structured.companyName = companyName;
-    if (!structured.sources?.length) {
-      structured.sources = [
-        ...new Set(searchLog.flatMap((entry) => entry.results.map((item) => item.url))),
-      ]
-        .map((url) => {
-          try {
-            return new URL(url).hostname.replace(/^www\./, "");
-          } catch {
-            return url;
-          }
-        })
-        .filter(Boolean)
-        .slice(0, 8);
-    }
-
-    emit({
-      type: "handoff",
-      agent: "researcher",
-      message: "Structured JSON handoff ready for Writer",
-      payload: structured,
-      timestamp: new Date().toISOString(),
-    });
-
-    emit({
-      type: "agent_complete",
-      agent: "researcher",
-      message: "Research complete",
-      timestamp: new Date().toISOString(),
-    });
-
-    return { research: structured, searchLog };
-  }
-
-  throw new Error("Researcher exceeded maximum tool-calling turns");
+  return { research: structured, searchLog };
 }

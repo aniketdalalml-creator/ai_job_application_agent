@@ -75,6 +75,8 @@ app.get("/api/runs/:id/events", (req, res) => {
   res.flushHeaders?.();
 
   let cursor = 0;
+  /** @type {ReturnType<typeof setInterval> | undefined} */
+  let timer;
 
   const sendEvents = () => {
     while (cursor < run.events.length) {
@@ -92,12 +94,12 @@ app.get("/api/runs/:id/events", (req, res) => {
         })}\n\n`,
       );
       res.end();
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
     }
   };
 
   sendEvents();
-  const timer = setInterval(sendEvents, 500);
+  timer = setInterval(sendEvents, 500);
 
   req.on("close", () => {
     clearInterval(timer);
