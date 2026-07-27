@@ -9,6 +9,7 @@ __pycache__/
 output/
 node_modules/
 frontend/dist/
+_design_ref/
 *.egg-info/
 dist/
 build/
