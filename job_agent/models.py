@@ -53,11 +53,27 @@ class Critique(BaseModel):
         return list(value)
 
 
+class ApplicationMaterials(BaseModel):
+    """Tailored cover letter and resume bullets."""
+
+    coverLetter: str
+    resumeBullets: list[str] = Field(default_factory=list)
+
+    @field_validator("resumeBullets", mode="before")
+    @classmethod
+    def _coerce_bullets(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [value]
+        return list(value)
+
+
 class PipelineResult(BaseModel):
     """Final output of the cover-letter pipeline."""
 
     research: CompanyResearch
-    draft: str
+    draft: ApplicationMaterials
     critique: Critique
-    final_letter: str
+    final_materials: ApplicationMaterials
     revised: bool = False

@@ -66,7 +66,11 @@ def main(argv: list[str] | None = None) -> int:
     letter_path = save_result(result, args.output_dir)
     console.print(f"\n[bold green]Saved cover letter ->[/bold green] {letter_path}")
     if not args.quiet:
-        console.print("\n" + result.final_letter)
+        console.print("\n" + result.final_materials.coverLetter)
+        if result.final_materials.resumeBullets:
+            console.print("\n[bold]Resume bullets[/bold]")
+            for bullet in result.final_materials.resumeBullets:
+                console.print(f"- {bullet}")
     return 0
 
 
