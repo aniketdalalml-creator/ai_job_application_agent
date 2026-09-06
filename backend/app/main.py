@@ -33,6 +33,8 @@ app.add_middleware(
         "http://127.0.0.1:5174",
         "http://localhost:5175",
         "http://127.0.0.1:5175",
+        "http://localhost:5176",
+        "http://127.0.0.1:5176",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -43,7 +45,14 @@ app.include_router(api_router)
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "service": "careerpilot", "groq_model": get_settings().groq_model}
+    settings = get_settings()
+    return {
+        "ok": True,
+        "service": "careerpilot",
+        "groq_model": settings.groq_model,
+        "job_provider": settings.job_provider,
+        "apify_configured": bool(settings.apify_token),
+    }
 
 
 frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"

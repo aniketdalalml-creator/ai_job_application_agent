@@ -223,12 +223,22 @@ def _run_search(search_id: str) -> None:
 
         user = session.get(User, run.user_id)
         candidate = _profile_to_candidate(profile, user.name if user else "")
-        provider = get_provider(
-            settings.job_provider,
-            adzuna_app_id=settings.adzuna_app_id,
-            adzuna_app_key=settings.adzuna_app_key,
-        )
-        jobs = provider.search(candidate, limit=settings.search_limit)
+        provider = get_provider(settings.job_provider, settings=settings)
+
+        def on_progress(event_type: str, message: str, **payload: Any) -> None:
+            with Session(engine) as inner:
+                current = inner.get(SearchRun, search_id)
+                if not current:
+                    return
+                _append_event(current, event_type, message, **payload)
+                inner.add(current)
+                inner.commit()
+
+        if hasattr(provider, "search") and provider.__class__.__name__ in {"AutoProvider", "ApifyProvider"}:
+            jobs = provider.search(candidate, limit=settings.search_limit, on_progress=on_progress)
+        else:
+            jobs = provider.search(candidate, limit=settings.search_limit)
+        session.refresh(run)
         _append_event(run, "tool_result", f"Found {len(jobs)} posting(s)", count=len(jobs))
         session.add(run)
         session.commit()

@@ -1,5 +1,6 @@
 from backend.app.integrations.jobs import (
     AdzunaProvider,
+    ApifyProvider,
     AutoProvider,
     JobProvider,
     MuseProvider,
@@ -10,6 +11,7 @@ from backend.app.integrations.jobs import (
 
 __all__ = [
     "AdzunaProvider",
+    "ApifyProvider",
     "AutoProvider",
     "JobProvider",
     "MuseProvider",

@@ -2,7 +2,6 @@ const NAV_ITEMS = [
   { id: "dashboard", label: "Overview", icon: "dashboard" },
   { id: "profile", label: "Profile", icon: "badge" },
   { id: "jobs", label: "Job Matches", icon: "radar" },
-  { id: "new-application", label: "Paste Job", icon: "add_box" },
   { id: "applications", label: "Applications", icon: "assignment_turned_in" },
 ];
 

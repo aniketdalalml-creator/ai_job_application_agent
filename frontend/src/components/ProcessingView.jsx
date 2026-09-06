@@ -1,4 +1,4 @@
-const WORKFLOW_STEPS = [
+const PREPARE_STEPS = [
   { id: "research", label: "Company research", detail: "Web search and structured notes" },
   { id: "handoff", label: "Research handoff", detail: "Facts ready for the writer" },
   { id: "draft", label: "Draft materials", detail: "Cover letter and resume bullets" },
@@ -7,10 +7,17 @@ const WORKFLOW_STEPS = [
   { id: "complete", label: "Package ready", detail: "Materials saved to your tracker" },
 ];
 
-function stepState(stepId, events, runStatus) {
-  const types = events.map((event) => event.type);
-  const order = WORKFLOW_STEPS.map((step) => step.id);
+const SEARCH_STEPS = [
+  { id: "start", label: "Start search", detail: "Using your saved profile" },
+  { id: "apify", label: "Fetch from Apify", detail: "Scraping Indeed and LinkedIn" },
+  { id: "listings", label: "Collect listings", detail: "Normalize job postings" },
+  { id: "score", label: "Score matches", detail: "APPLY / MAYBE / SKIP for each role" },
+  { id: "complete", label: "Results ready", detail: "Open Job Matches to review" },
+];
 
+function prepareStepState(stepId, events, runStatus) {
+  const types = events.map((event) => event.type);
+  const order = PREPARE_STEPS.map((step) => step.id);
   const completed = {
     research: types.some((type) => type === "tool_result" || type === "handoff"),
     handoff: types.includes("handoff"),
@@ -19,24 +26,58 @@ function stepState(stepId, events, runStatus) {
     revise: types.includes("revise") || (types.includes("critique") && runStatus === "completed"),
     complete: runStatus === "completed" || runStatus === "ready",
   };
-
   const firstIncomplete = order.find((id) => !completed[id]);
   if (completed[stepId]) return "done";
   if (firstIncomplete === stepId) return "active";
   return "pending";
 }
 
-function progressPercent(events, runStatus) {
-  const states = WORKFLOW_STEPS.map((step) => stepState(step.id, events, runStatus));
-  const doneCount = states.filter((state) => state === "done").length;
-  if (runStatus === "completed" || runStatus === "ready") return 100;
-  return Math.min(99, Math.round((doneCount / WORKFLOW_STEPS.length) * 100));
+function searchStepState(stepId, events, runStatus) {
+  const types = events.map((event) => event.type);
+  const completed = {
+    start: types.includes("pipeline_start") || runStatus === "running" || runStatus === "completed",
+    apify:
+      types.includes("apify_done") ||
+      types.includes("apify_fallback") ||
+      types.includes("tool_result") ||
+      runStatus === "completed",
+    listings: types.includes("tool_result") || runStatus === "completed",
+    score: types.includes("fit_result") || types.includes("pipeline_complete") || runStatus === "completed",
+    complete: runStatus === "completed",
+  };
+  const order = SEARCH_STEPS.map((step) => step.id);
+  const firstIncomplete = order.find((id) => !completed[id]);
+  if (completed[stepId]) return "done";
+  if (firstIncomplete === stepId) return "active";
+  return "pending";
 }
 
-export default function ProcessingView({ companyName, events, runStatus, error }) {
-  const progress = progressPercent(events, runStatus);
-  const activeStep = WORKFLOW_STEPS.find((step) => stepState(step.id, events, runStatus) === "active");
+function latestPercent(events) {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const value = events[index]?.payload?.percent;
+    if (typeof value === "number") return Math.min(99, Math.max(0, Math.round(value)));
+  }
+  return null;
+}
+
+function progressPercent(isSearch, events, runStatus) {
+  if (runStatus === "completed" || runStatus === "ready") return 100;
+  const live = latestPercent(events);
+  if (live != null) return live;
+  const steps = isSearch ? SEARCH_STEPS : PREPARE_STEPS;
+  const stateOf = isSearch ? searchStepState : prepareStepState;
+  const doneCount = steps.filter((step) => stateOf(step.id, events, runStatus) === "done").length;
+  return Math.min(99, Math.round((doneCount / steps.length) * 100));
+}
+
+export default function ProcessingView({ companyName, events, runStatus, error, runKind = "application" }) {
+  const isSearch = runKind === "search";
+  const steps = isSearch ? SEARCH_STEPS : PREPARE_STEPS;
+  const stateOf = isSearch ? searchStepState : prepareStepState;
+  const progress = progressPercent(isSearch, events, runStatus);
+  const activeStep = steps.find((step) => stateOf(step.id, events, runStatus) === "active");
   const failed = runStatus === "failed" || Boolean(error);
+  const latest = events[events.length - 1];
 
   return (
     <div className="mx-auto max-w-content space-y-8">
@@ -49,10 +90,10 @@ export default function ProcessingView({ companyName, events, runStatus, error }
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full bg-primary-fixed px-3 py-1 text-[12px] font-semibold text-primary">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-          Live optimization
+          {isSearch ? "Live job search" : "Live optimization"}
         </div>
         <h2 className="max-w-2xl text-[36px] font-bold leading-tight tracking-tight">
-          Preparing materials for {companyName}
+          {isSearch ? "Fetching jobs from Apify" : `Preparing materials for ${companyName}`}
         </h2>
       </div>
 
@@ -60,13 +101,13 @@ export default function ProcessingView({ companyName, events, runStatus, error }
         <div className="lg:col-span-5">
           <div className="institutional-panel h-full p-6">
             <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-[14px] font-semibold">Agent workflow</h3>
+              <h3 className="text-[14px] font-semibold">{isSearch ? "Search workflow" : "Agent workflow"}</h3>
               <span className="status-running">{runStatus}</span>
             </div>
             <div className="relative space-y-5">
               <div className="absolute bottom-2 left-[13px] top-2 w-px bg-outline-variant" />
-              {WORKFLOW_STEPS.map((step) => {
-                const state = stepState(step.id, events, runStatus);
+              {steps.map((step) => {
+                const state = stateOf(step.id, events, runStatus);
                 return (
                   <div key={step.id} className={`relative flex items-start gap-4 ${state === "pending" ? "opacity-40" : ""}`}>
                     <div
@@ -108,12 +149,17 @@ export default function ProcessingView({ companyName, events, runStatus, error }
               </div>
             </div>
             <h4 className="text-[18px] font-semibold">
-              {activeStep ? activeStep.label : "Finalizing package"}
+              {activeStep ? activeStep.label : isSearch ? "Opening matches" : "Finalizing package"}
             </h4>
             <p className="mt-2 max-w-sm text-[13px] text-on-surface-variant">
-              {activeStep
-                ? `Working on ${activeStep.label.toLowerCase()} for ${companyName}.`
-                : "Saving the application package."}
+              {latest?.message ||
+                (activeStep
+                  ? isSearch
+                    ? activeStep.detail
+                    : `Working on ${activeStep.label.toLowerCase()} for ${companyName}.`
+                  : isSearch
+                    ? "Saving scored jobs to Job Matches."
+                    : "Saving the application package.")}
             </p>
             <div className="relative mt-6 h-2 w-full max-w-sm overflow-hidden rounded-full bg-surface-container">
               <div className="absolute left-0 top-0 h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${progress}%` }} />

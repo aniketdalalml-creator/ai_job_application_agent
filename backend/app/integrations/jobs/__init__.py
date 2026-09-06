@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from backend.app.ai.models import CandidateProfile, NormalizedJob
+from backend.app.core.config import Settings, get_settings
 from backend.app.integrations.jobs.adzuna import AdzunaProvider
+from backend.app.integrations.jobs.apify import ApifyProvider
 from backend.app.integrations.jobs.base import JobProvider
 from backend.app.integrations.jobs.remotive import RemotiveProvider
 from backend.app.integrations.jobs.themuse import MuseProvider
@@ -41,13 +43,32 @@ class PublicBoardsProvider:
 
 
 class AutoProvider:
-    """Adzuna when keys work; otherwise Remotive + The Muse."""
+    """Apify when token exists, else Adzuna, else Remotive + The Muse."""
 
-    def __init__(self, adzuna_app_id: str, adzuna_app_key: str) -> None:
+    def __init__(
+        self,
+        adzuna_app_id: str = "",
+        adzuna_app_key: str = "",
+        *,
+        apify: ApifyProvider | None = None,
+    ) -> None:
         self.adzuna_app_id = adzuna_app_id.strip()
         self.adzuna_app_key = adzuna_app_key.strip()
+        self.apify = apify
 
-    def search(self, profile: CandidateProfile, *, limit: int = 20) -> list[NormalizedJob]:
+    def search(self, profile: CandidateProfile, *, limit: int = 20, on_progress=None) -> list[NormalizedJob]:
+        if self.apify and self.apify.token:
+            try:
+                jobs = self.apify.search(profile, limit=limit, on_progress=on_progress)
+                if jobs:
+                    return jobs
+            except Exception:  # noqa: BLE001
+                if on_progress:
+                    on_progress(
+                        "apify_fallback",
+                        "Apify unavailable, using public job boards",
+                        percent=22,
+                    )
         if self.adzuna_app_id and self.adzuna_app_key:
             try:
                 jobs = AdzunaProvider(self.adzuna_app_id, self.adzuna_app_key).search(profile, limit=limit)
@@ -58,19 +79,37 @@ class AutoProvider:
         return PublicBoardsProvider().search(profile, limit=limit)
 
 
-def get_provider(name: str, *, adzuna_app_id: str, adzuna_app_key: str) -> JobProvider:
-    provider = (name or "auto").strip().lower()
+def apify_from_settings(settings: Settings | None = None) -> ApifyProvider:
+    return ApifyProvider.from_settings(settings or get_settings())
+
+
+def get_provider(
+    name: str = "auto",
+    *,
+    adzuna_app_id: str = "",
+    adzuna_app_key: str = "",
+    settings: Settings | None = None,
+) -> JobProvider:
+    cfg = settings or get_settings()
+    provider = (name or cfg.job_provider or "auto").strip().lower()
     if provider == "remotive":
         return RemotiveProvider()
     if provider in {"muse", "themuse"}:
         return MuseProvider()
+    if provider == "apify":
+        return apify_from_settings(cfg)
     if provider in {"adzuna", "auto", "public", ""}:
-        return AutoProvider(adzuna_app_id, adzuna_app_key)
+        return AutoProvider(
+            adzuna_app_id or cfg.adzuna_app_id,
+            adzuna_app_key or cfg.adzuna_app_key,
+            apify=apify_from_settings(cfg),
+        )
     raise RuntimeError(f"Unsupported JOB_PROVIDER: {provider}")
 
 
 __all__ = [
     "AdzunaProvider",
+    "ApifyProvider",
     "AutoProvider",
     "JobProvider",
     "MuseProvider",

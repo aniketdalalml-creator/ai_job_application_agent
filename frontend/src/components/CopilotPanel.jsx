@@ -143,7 +143,7 @@ export default function CopilotPanel({
           ) : (
             <>
               <button type="button" className="btn-secondary !px-4 !py-2 text-[12px]" onClick={onQuickAction}>
-                Paste a job
+                Find jobs
               </button>
               {latestEvent ? <span className="status-running">{runStatus || "active"}</span> : null}
             </>

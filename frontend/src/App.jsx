@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { api } from "./api.js";
 import { useAuth } from "./auth.jsx";
 import ApplicationsView from "./components/ApplicationsView.jsx";
 import CopilotPanel from "./components/CopilotPanel.jsx";
 import DashboardView from "./components/DashboardView.jsx";
-import JobFeedView from "./components/JobFeedView.jsx";
+import { JobsPage } from "./features/jobs";
 import LoginView from "./components/LoginView.jsx";
 import NewApplicationView from "./components/NewApplicationView.jsx";
 import ProcessingView from "./components/ProcessingView.jsx";
@@ -132,11 +132,6 @@ export default function App() {
     source.onerror = () => source.close();
     return () => source.close();
   }, [runId, runKind, refreshWorkspace]);
-
-  const visibleJobs = useMemo(() => {
-    if (jobFilter === "ALL") return jobs;
-    return jobs.filter((job) => job.fit?.recommendation === jobFilter);
-  }, [jobs, jobFilter]);
 
   const finalMaterials = run
     ? { coverLetter: run.cover_letter, resumeBullets: run.resume_bullets }
@@ -438,8 +433,8 @@ export default function App() {
     }
     if (activeView === "jobs") {
       return (
-        <JobFeedView
-          jobs={visibleJobs}
+        <JobsPage
+          jobs={jobs}
           filter={jobFilter}
           setFilter={setJobFilter}
           searching={searching}
@@ -477,6 +472,7 @@ export default function App() {
     if (activeView === "processing") {
       return (
         <ProcessingView
+          runKind={runKind}
           companyName={run?.company || run?.companyName || companyName || "search"}
           events={events}
           runStatus={run?.status || (searching ? "running" : "queued")}
@@ -544,7 +540,7 @@ export default function App() {
         runStatus={run?.status}
         finalMaterials={finalMaterials}
         critique={critique}
-        onQuickAction={() => setActiveView("new-application")}
+        onQuickAction={() => setActiveView("jobs")}
         mode={activeView === "profile" ? "profile" : "pipeline"}
         interview={interview}
         interviewMessages={interviewMessages}

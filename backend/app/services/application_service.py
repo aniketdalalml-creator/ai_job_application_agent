@@ -51,6 +51,7 @@ def serialize(application: Application, job: Job | None, fit: FitAnalysisRow | N
         "company": job.company if job else "",
         "title": job.title if job else "",
         "job_url": job.url if job else "",
+        "source": job.source if job else "",
         "fit": _serialize_fit(fit),
     }
 

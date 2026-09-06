@@ -75,9 +75,6 @@ export default function DashboardView({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-secondary" onClick={onNewApplication}>
-            Paste a job
-          </button>
           <button type="button" className="btn-primary" onClick={onFindJobs}>
             <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
             Find jobs
