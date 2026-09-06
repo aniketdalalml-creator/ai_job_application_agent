@@ -8,9 +8,9 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    strictPort: true,
+    strictPort: false,
     proxy: {
-      "/api": "http://localhost:3001",
+      "/api": process.env.API_PROXY || "http://localhost:8000",
     },
   },
 });

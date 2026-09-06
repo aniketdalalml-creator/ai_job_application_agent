@@ -5,11 +5,14 @@
 @layer base {
   html,
   body {
-    @apply m-0 p-0 antialiased;
+    margin: 0;
+    padding: 0;
   }
 
   body {
-    @apply bg-surface font-sans text-on-surface;
+    @apply antialiased font-sans;
+    background-color: #faf8ff;
+    color: #131b2e;
     overscroll-behavior: none;
   }
 
@@ -19,7 +22,8 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary/30;
+    background: #c2c6d6;
+    border-radius: 9999px;
   }
 }
 
@@ -40,54 +44,136 @@
   }
 
   .institutional-border {
-    @apply border border-outline-variant;
+    border: 1px solid #c2c6d6;
   }
 
   .institutional-panel {
-    @apply bg-white institutional-border shadow-institutional;
+    border-radius: 1rem;
+    border: 1px solid rgba(194, 198, 214, 0.7);
+    background: #ffffff;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
   }
 
   .label-caps {
-    @apply text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #424754;
   }
 
   .btn-primary {
-    @apply inline-flex items-center gap-2 bg-primary px-6 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white shadow-institutional-lg transition-all hover:bg-primary-light;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-[13px] font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    background: #0058be;
+    color: #ffffff;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  }
+
+  .btn-primary:hover {
+    background: #2170e4;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 border border-primary bg-white px-6 py-2.5 text-[11px] font-bold uppercase tracking-widest text-primary transition-all hover:bg-surface-container-low;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-[13px] font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    border: 1px solid #c2c6d6;
+    background: #ffffff;
+    color: #131b2e;
+  }
+
+  .btn-secondary:hover {
+    background: #f2f3ff;
+  }
+
+  .btn-ai {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-2.5 text-[13px] font-semibold transition-all active:scale-[0.98];
+    background: #6b38d4;
+    color: #ffffff;
+    box-shadow: 0 0 12px 0 rgba(139, 92, 246, 0.15);
   }
 
   .input-field {
-    @apply w-full border-2 border-outline-variant bg-white px-4 py-3 text-[13px] text-on-surface transition-all focus:border-primary focus:outline-none;
+    @apply w-full px-4 py-3 text-[14px] transition-all focus:outline-none;
+    border-radius: 0.75rem;
+    border: 1px solid #c2c6d6;
+    background: #ffffff;
+    color: #131b2e;
+  }
+
+  .input-field::placeholder {
+    color: #727785;
+  }
+
+  .input-field:focus {
+    border-color: #0058be;
+    box-shadow: 0 0 0 3px rgba(0, 88, 190, 0.15);
   }
 
   .nav-item {
-    @apply flex items-center gap-3 border-l-4 border-transparent px-8 py-3 text-white/60 transition-all hover:bg-white/10 hover:text-white;
+    @apply flex items-center gap-3 px-3 py-2.5 transition-colors;
+    border-radius: 1rem;
+    color: #424754;
   }
 
-  .nav-item-active {
-    @apply border-white bg-primary-light/20 font-bold text-white;
+  .nav-item:hover {
+    background: #e2e7ff;
+    color: #131b2e;
+  }
+
+  .nav-item-active,
+  .nav-item-active:hover {
+    background: #2170e4;
+    color: #fefcff;
+    font-weight: 500;
   }
 
   .status-chip {
-    @apply inline-block border px-2 py-1 text-[10px] font-black uppercase tracking-widest;
+    @apply inline-flex items-center px-2.5 py-1 text-[11px] font-semibold capitalize;
+    border-radius: 9999px;
   }
 
   .status-ready {
-    @apply status-chip border-primary bg-primary-fixed text-primary;
+    @apply status-chip;
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
   }
 
   .status-running {
-    @apply status-chip border-primary bg-primary text-white;
+    @apply status-chip;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
   }
 
   .status-completed {
-    @apply status-chip border-outline-variant bg-surface-container-high text-on-surface;
+    @apply status-chip;
+    background: #eaedff;
+    color: #424754;
   }
 
   .status-failed {
-    @apply status-chip border-error bg-error-container text-error;
+    @apply status-chip;
+    background: #ffdad6;
+    color: #ba1a1a;
+  }
+
+  .field-badge {
+    @apply ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide;
+  }
+
+  .field-badge-review {
+    @apply field-badge;
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+  }
+
+  .field-badge-inferred {
+    @apply field-badge;
+    background: #eaedff;
+    color: #424754;
+  }
+
+  .field-badge-confirmed {
+    @apply field-badge;
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
   }
 }

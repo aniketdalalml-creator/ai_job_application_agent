@@ -14,3 +14,4 @@ _design_ref/
 dist/
 build/
 .DS_Store
+*.db

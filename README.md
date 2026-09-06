@@ -1,188 +1,83 @@
-# AI Job Application Agent (Multi-Agent Pipeline)
+# CareerPilot — AI Career Agent
 
-Multi-agent job application system aligned with a **Researcher → Writer** orchestration pipeline. The primary stack uses the **Claude API** with tool-calling, live web search, structured JSON handoff, an **Express** API for async run queuing, and a **React** frontend that visualizes the live agent trace.
+Find jobs from a saved profile, score your chances, generate tailored applications, and track outcomes.
 
-A lightweight **Python/Groq CLI** is also included for headless runs.
+**Stack:** React + FastAPI + MySQL 8 + Groq. Job search uses the official Adzuna API.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    UI[React frontend] -->|POST /api/runs| API[Express API + queue]
-    API -->|SSE /api/runs/:id/events| UI
-    API --> P[Pipeline orchestrator]
-    P --> R[Agent 1: Researcher]
-    R -->|web_search tool| WS[DuckDuckGo]
-    R -->|JSON handoff| W[Agent 2: Writer]
-    W --> D[Draft cover letter + resume bullets]
-    D --> C[Critique]
-    C -->|if issues| RV[Revise]
-    C -->|else| OUT[Final materials]
-    RV --> OUT
+    UI[React CareerPilot] -->|cookie JWT| API[FastAPI]
+    API --> Auth[Auth]
+    Auth --> Finder[JobFinder]
+    Auth --> Fit[FitAnalyzer]
+    Auth --> Writer[Researcher then Writer]
+    Finder --> Adzuna[Adzuna API]
+    API --> DB[(MySQL)]
 ```
 
-## What matches the resume project
+## Quick start
 
-| Resume claim | Implementation |
-|--------------|----------------|
-| Two-agent orchestration (Researcher → Writer) | `server/src/agents/researcher.js`, `writer.js`, `pipeline.js` |
-| Claude API with tool-calling + live web search | Researcher uses Anthropic tools + `web_search` |
-| Structured JSON state handoff | Researcher emits `handoff` event with company facts, role requirements, culture signals |
-| Frontend with live agent trace | `frontend/src/App.jsx` streams SSE events and shows handoff JSON |
-| Tailored resume bullets + cover letters | Writer returns `{ coverLetter, resumeBullets }` |
-| Express API queue for async runs | `POST /api/runs` queues jobs; UI stays responsive |
+### 1. Python deps
 
-## Quick start (Node.js + React)
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-### 1. Install dependencies
+### 2. MySQL
+
+```sql
+CREATE DATABASE careerpilot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'careerpilot'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL ON careerpilot.* TO 'careerpilot'@'localhost';
+```
+
+Copy `.env.example` to `.env` and set `MYSQL_PASSWORD`, `GROQ_API_KEY`, `JWT_SECRET`, and Adzuna keys.
+
+Tables are created on API startup (`create_all`). Optional migrations:
+
+```bash
+alembic -c backend/alembic.ini upgrade head
+```
+
+### 3. Frontend + API
 
 ```bash
 npm run install:all
-```
-
-### 2. Configure Claude API key
-
-```bash
-copy .env.example .env   # Windows
-# cp .env.example .env   # macOS/Linux
-```
-
-Set in `.env`:
-
-```env
-ANTHROPIC_API_KEY=sk-ant-your_key_here
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
-PORT=3001
-```
-
-### 3. Run in development
-
-Terminal 1 — API + agent queue:
-
-```bash
 npm run dev:server
-```
-
-Terminal 2 — frontend with proxy:
-
-```bash
 npm run dev:frontend
 ```
 
-Open http://localhost:5173
+Open http://localhost:5173 — register, save a profile, then Find jobs.
 
-### 4. Production-style run
+## Auth
 
-```bash
-npm start
-```
-
-Serves the built frontend and API on http://localhost:3001
+Email + password. JWT is stored in an httpOnly cookie. All `/api/*` routes except register, login, and health require a session.
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/health` | Health check |
-| `POST` | `/api/runs` | Queue a new application run |
-| `GET` | `/api/runs` | List all runs |
-| `GET` | `/api/runs/:id` | Get run status + final result |
-| `GET` | `/api/runs/:id/events` | SSE stream of live agent trace events |
+| `POST` | `/api/auth/register` | Create account |
+| `POST` | `/api/auth/login` | Sign in |
+| `POST` | `/api/auth/logout` | Clear cookie |
+| `GET` | `/api/auth/me` | Current user |
+| `GET/PUT` | `/api/profile` | Seeker profile |
+| `POST` | `/api/searches` | Search + fit score |
+| `GET` | `/api/jobs` | Ranked feed |
+| `POST` | `/api/jobs/manual` | Paste a job |
+| `POST` | `/api/jobs/:id/prepare` | Researcher → Writer |
+| `GET/PATCH` | `/api/applications` | Tracker |
+| `GET` | `/api/insights` | Strategy lite |
+| `GET` | `/api/health` | Health |
 
-Example request:
+Applications are prepared for you to submit. CareerPilot does not auto-apply.
 
-```bash
-curl -X POST http://localhost:3001/api/runs \
-  -H "Content-Type: application/json" \
-  -d "{\"companyName\":\"Anthropic\",\"jobDescription\":\"...\",\"resumeText\":\"...\"}"
-```
-
-## Agent pipeline
-
-### Researcher
-
-1. Calls Claude with a `web_search` tool
-2. Gathers company news, products, and culture signals
-3. Returns structured JSON:
-
-```json
-{
-  "companyName": "Anthropic",
-  "companyFacts": ["..."],
-  "roleRequirements": ["..."],
-  "cultureSignals": ["..."],
-  "sources": ["anthropic.com"],
-  "researchNotes": "..."
-}
-```
-
-### Writer
-
-1. Drafts a cover letter and tailored resume bullets from research + resume
-2. Self-critiques for generic language and unsupported claims
-3. Revises only when critique flags issues
-
-## Python CLI (optional)
-
-Headless pipeline using Groq instead of Claude:
+## Python CLI
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate          # Windows
-pip install -r requirements.txt
-
-python -m job_agent \
-  --company "Anthropic" \
-  --job-file examples/sample_job.txt \
-  --resume-file examples/sample_resume.txt
+python -m job_agent --company "Anthropic" --job-file examples/sample_job.txt --resume-file examples/sample_resume.txt
 ```
-
-Outputs land in `./output/`:
-
-- `{Company}_cover_letter.txt`
-- `{Company}_resume_bullets.txt`
-- `{Company}_research.json`
-- `{Company}_pipeline.json`
-
-## Project structure
-
-```
-ai_job_application_agent/
-├── server/                 # Express API + Claude agents
-│   └── src/
-│       ├── index.js
-│       ├── queue.js
-│       ├── store.js
-│       ├── agents/
-│       └── tools/webSearch.js
-├── frontend/               # React trace UI
-│   └── src/App.jsx
-├── job_agent/              # Python/Groq CLI
-├── examples/
-├── package.json            # root scripts
-└── .env.example
-```
-
-## Environment variables
-
-| Variable | Default | Used by |
-|----------|---------|---------|
-| `ANTHROPIC_API_KEY` | required | Node server |
-| `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | Node server |
-| `PORT` | `3001` | Express |
-| `GROQ_API_KEY` | optional | Python CLI |
-| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Python CLI |
-
-## Troubleshooting
-
-**Frontend shows API errors**
-
-Make sure the server is running on port 3001 and `ANTHROPIC_API_KEY` is set.
-
-**SSE trace stops early**
-
-Check server logs for Claude or web-search errors. Failed runs are marked `failed` in `/api/runs/:id`.
-
-**Python CLI key error**
-
-The CLI uses Groq, not Claude. Set `GROQ_API_KEY` in `.env`.

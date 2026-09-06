@@ -1,6 +1,10 @@
 export default function NewApplicationView({
   companyName,
   setCompanyName,
+  jobTitle,
+  setJobTitle,
+  jobLocation,
+  setJobLocation,
   jobDescription,
   setJobDescription,
   resumeText,
@@ -12,30 +16,20 @@ export default function NewApplicationView({
   return (
     <div className="mx-auto max-w-4xl space-y-10">
       <div className="space-y-4 pt-4">
-        <div className="inline-flex items-center gap-2 border border-primary/20 bg-primary/10 px-2 py-0.5">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-          </span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-            New Application Entry
-          </span>
+        <div className="inline-flex items-center gap-2 rounded-full bg-primary-fixed px-3 py-1 text-[12px] font-semibold text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+          Paste a job
         </div>
-        <h2 className="max-w-2xl text-[36px] font-semibold leading-[1.1] tracking-tight text-on-surface">
-          Configure your next application with{" "}
-          <span className="border-b-4 border-primary/20">institutional precision</span>.
+        <h2 className="max-w-2xl text-[36px] font-bold leading-tight tracking-tight">
+          Score a posting and generate tailored materials
         </h2>
       </div>
 
       <form onSubmit={onSubmit} className="institutional-panel space-y-6 p-8">
-        <div className="border-b border-outline-variant/30 pb-4">
-          <h3 className="text-[13px] font-bold uppercase tracking-[0.15em] text-primary">
-            Application Parameters
-          </h3>
-        </div>
+        <h3 className="text-[14px] font-semibold">Job details</h3>
 
         <label className="block space-y-2">
-          <span className="label-caps">Target Entity</span>
+          <span className="label-caps">Company</span>
           <input
             className="input-field"
             value={companyName}
@@ -45,8 +39,29 @@ export default function NewApplicationView({
           />
         </label>
 
+        <div className="grid gap-6 md:grid-cols-2">
+          <label className="block space-y-2">
+            <span className="label-caps">Role Title</span>
+            <input
+              className="input-field"
+              value={jobTitle}
+              onChange={(event) => setJobTitle(event.target.value)}
+              placeholder="e.g. Senior Backend Engineer"
+            />
+          </label>
+          <label className="block space-y-2">
+            <span className="label-caps">Location</span>
+            <input
+              className="input-field"
+              value={jobLocation}
+              onChange={(event) => setJobLocation(event.target.value)}
+              placeholder="e.g. Remote or Bengaluru"
+            />
+          </label>
+        </div>
+
         <label className="block space-y-2">
-          <span className="label-caps">Position Specification</span>
+          <span className="label-caps">Job description</span>
           <textarea
             className="input-field min-h-[180px] resize-y font-mono text-[12px]"
             value={jobDescription}
@@ -56,7 +71,7 @@ export default function NewApplicationView({
         </label>
 
         <label className="block space-y-2">
-          <span className="label-caps">Candidate Resume</span>
+          <span className="label-caps">Resume</span>
           <textarea
             className="input-field min-h-[180px] resize-y font-mono text-[12px]"
             value={resumeText}
@@ -70,7 +85,7 @@ export default function NewApplicationView({
         <div className="flex items-center gap-4 pt-2">
           <button type="submit" className="btn-primary" disabled={submitting}>
             <span className="material-symbols-outlined text-[18px]">bolt</span>
-            {submitting ? "Queueing..." : "Execute Pipeline"}
+            {submitting ? "Queueing..." : "Prepare application"}
           </button>
         </div>
       </form>

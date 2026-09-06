@@ -1,3 +1,3 @@
-"""Job Agent — multi-agent cover letter pipeline powered by Groq."""
+"""CareerPilot domain agents — research, writing, fit scoring, and job search."""
 
 __version__ = "0.1.0"

@@ -32,8 +32,21 @@ export function getGroqClient() {
   return client;
 }
 
+const DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b";
+const RETIRED_GROQ_MODELS = new Set([
+  "llama-3.3-70b-versatile",
+  "llama-3.1-70b-versatile",
+  "llama-3.1-8b-instant",
+  "mixtral-8x7b-32768",
+  "gemma2-9b-it",
+]);
+
 export function getModel() {
-  return process.env.GROQ_MODEL?.trim() || "llama-3.3-70b-versatile";
+  const model = process.env.GROQ_MODEL?.trim() || "";
+  if (!model || RETIRED_GROQ_MODELS.has(model)) {
+    return DEFAULT_GROQ_MODEL;
+  }
+  return model;
 }
 
 /**

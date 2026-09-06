@@ -1,136 +1,148 @@
-export default function DashboardView({ runs, onNewApplication, onOpenRun }) {
-  const completed = runs.filter((run) => run.status === "completed").length;
-  const total = runs.length;
-  const failed = runs.filter((run) => run.status === "failed").length;
+function statusClass(status) {
+  if (status === "failed") return "status-failed";
+  if (status === "generating") return "status-running";
+  if (status === "ready" || status === "applied" || status === "offer") return "status-ready";
+  return "status-completed";
+}
+
+export default function DashboardView({
+  user,
+  profile,
+  insights,
+  applications,
+  onNewApplication,
+  onOpenApplication,
+  onFindJobs,
+}) {
+  const firstName = (user?.name || "there").split(" ")[0];
+  const titles = (profile?.target_titles || []).slice(0, 2).join(" / ") || "your target roles";
+  const locations = (profile?.locations || []).slice(0, 2).join(" & ") || "your locations";
+  const applyCount = insights?.by_recommendation?.APPLY ?? 0;
+  const suggestion = insights?.suggestions?.[0];
+
+  const stats = [
+    {
+      label: "Job matches",
+      value: insights?.jobs_found ?? 0,
+      icon: "radar",
+      tone: "bg-tertiary-fixed text-tertiary",
+      hint: applyCount ? `${applyCount} APPLY tier` : "Run a search",
+    },
+    {
+      label: "Average fit",
+      value: Math.round(insights?.avg_fit ?? 0),
+      icon: "psychology",
+      tone: "bg-primary-fixed text-primary",
+      hint: "Across scored roles",
+    },
+    {
+      label: "Applications",
+      value: insights?.application_count ?? 0,
+      icon: "rocket_launch",
+      tone: "bg-secondary-fixed text-secondary",
+      hint: "Prepared and tracked",
+    },
+    {
+      label: "APPLY tier",
+      value: applyCount,
+      icon: "verified",
+      tone: "bg-surface-container-high text-on-surface",
+      hint: "Strongest matches",
+    },
+  ];
 
   return (
-    <div className="space-y-10">
-      <section className="relative overflow-hidden border-b-4 border-primary-light bg-primary p-12 text-white shadow-institutional-lg">
-        <div className="absolute right-0 top-0 p-4 opacity-10">
-          <span className="material-symbols-outlined text-[160px]">corporate_fare</span>
-        </div>
-        <div className="relative z-10">
-          <div className="mb-8 inline-flex items-center gap-2 border border-white/20 bg-white/10 px-3 py-1">
-            <span className="material-symbols-outlined text-[16px]">verified_user</span>
-            <span className="font-mono text-[12px] font-bold uppercase tracking-[0.2em]">
-              SYSTEM.TERMINAL.ACTIVE
-            </span>
+    <div className="relative space-y-8">
+      <div className="pointer-events-none absolute -top-24 left-1/4 h-96 w-96 rounded-full bg-primary-fixed/20 blur-3xl" />
+      <div className="pointer-events-none absolute right-10 top-32 h-80 w-80 rounded-full bg-tertiary-fixed/30 blur-3xl" />
+
+      <section className="relative flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-surface-container-highest px-3 py-1 text-[12px] font-semibold text-secondary shadow-sm">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-secondary-container" />
+            Live workspace
           </div>
-          <h2 className="mb-4 text-[48px] font-extrabold uppercase leading-none tracking-tighter">
-            CareerPilot Intelligence
-          </h2>
-          <p className="max-w-lg border-l-2 border-white/30 pl-6 text-[18px] italic leading-relaxed text-primary-fixed-dim">
-            Research. Personalize. Verify.
-            <br />
-            <span className="font-bold not-italic text-white">
-              Engineered for maximum application yield.
+          <h2 className="text-[36px] font-bold leading-tight tracking-tight">Welcome back, {firstName}</h2>
+          <p className="flex flex-wrap items-center gap-2 text-[15px] text-on-surface-variant">
+            <span>Targeting</span>
+            <span className="font-semibold text-primary">{titles}</span>
+            <span className="text-outline">/</span>
+            <span>{profile?.years_experience ? `${profile.years_experience} yrs` : "Experience unset"}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-0.5 text-[12px]">
+              <span className="material-symbols-outlined text-[14px] text-primary">pin_drop</span>
+              {locations}
             </span>
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-secondary" onClick={onNewApplication}>
+            Paste a job
+          </button>
+          <button type="button" className="btn-primary" onClick={onFindJobs}>
+            <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+            Find jobs
+          </button>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Applications.Total", value: total, icon: "trending_up", badge: "Live" },
-          { label: "Completed.Runs", value: completed, icon: "psychology", badge: "Ready" },
-          { label: "Failed.Runs", value: failed, icon: "rule", badge: "Audit" },
-          { label: "Pipeline.Agents", value: 2, icon: "hub", badge: "Active" },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="institutional-panel p-6 transition-all hover:border-primary"
-          >
-            <div className="mb-4 flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center bg-primary text-white">
-                <span className="material-symbols-outlined">{stat.icon}</span>
-              </div>
-              <span className="bg-primary-fixed px-2 py-0.5 text-[10px] font-bold text-primary">
-                {stat.badge}
+      <section className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="institutional-panel flex flex-col justify-between p-5">
+            <div className="flex items-start justify-between">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-on-surface-variant">
+                {stat.label}
+              </span>
+              <span className={`flex h-7 w-7 items-center justify-center rounded-full ${stat.tone}`}>
+                <span className="material-symbols-outlined text-[16px]">{stat.icon}</span>
               </span>
             </div>
-            <p className="label-caps mb-1">{stat.label}</p>
-            <h3 className="font-mono text-[32px] font-black text-primary">{stat.value}</h3>
+            <p className="mt-3 text-[32px] font-bold tracking-tight">{stat.value}</p>
+            <p className="mt-1 text-[12px] text-on-surface-variant">{stat.hint}</p>
           </div>
         ))}
       </section>
 
-      <section className="institutional-border border-2 border-primary shadow-institutional-lg">
-        <div className="flex items-center justify-between border-b border-primary bg-surface p-8">
-          <div>
-            <h3 className="text-[20px] font-black uppercase tracking-tight text-primary">
-              Registry of Applications
-            </h3>
-            <p className="text-[13px] font-medium text-on-surface-variant">
-              Systematic tracking of generated application materials.
-            </p>
+      {suggestion ? (
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-surface-container-low via-surface-container-lowest to-surface-container-high p-6 shadow-institutional-lg">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-tertiary/10 blur-2xl" />
+          <div className="relative flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-tertiary text-on-tertiary shadow-glow">
+              <span className="material-symbols-outlined">auto_awesome</span>
+            </span>
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-wider text-tertiary">Strategy insight</p>
+              <p className="mt-1 text-[14px] leading-relaxed text-on-surface">{suggestion}</p>
+            </div>
           </div>
-          <button type="button" className="btn-primary" onClick={onNewApplication}>
-            New Application
-            <span className="material-symbols-outlined text-[18px]">add</span>
-          </button>
-        </div>
+        </section>
+      ) : null}
 
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-primary font-mono text-left text-white">
-                {["Entity", "Status.Flag", "Created", "Ops"].map((header, index, arr) => (
-                  <th
-                    key={header}
-                    className={`px-8 py-4 text-[11px] font-bold uppercase tracking-widest ${
-                      index < arr.length - 1 ? "border-r border-white/10" : "text-right"
-                    }`}
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant bg-white">
-              {runs.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-8 py-10 text-center text-on-surface-variant">
-                    No applications yet. Start your first run.
-                  </td>
-                </tr>
-              ) : (
-                runs.map((run) => (
-                  <tr key={run.id} className="transition-colors hover:bg-surface-container-low">
-                    <td className="border-r border-outline-variant/30 px-8 py-5">
-                      <span className="font-bold uppercase tracking-tight text-on-surface">
-                        {run.companyName}
-                      </span>
-                    </td>
-                    <td className="border-r border-outline-variant/30 px-8 py-5">
-                      <span
-                        className={
-                          run.status === "completed"
-                            ? "status-ready"
-                            : run.status === "failed"
-                              ? "status-failed"
-                              : "status-running"
-                        }
-                      >
-                        {run.status}
-                      </span>
-                    </td>
-                    <td className="border-r border-outline-variant/30 px-8 py-5 font-mono text-[13px]">
-                      {new Date(run.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <button
-                        type="button"
-                        className="text-on-surface-variant hover:text-primary"
-                        onClick={() => onOpenRun(run)}
-                      >
-                        <span className="material-symbols-outlined">open_in_new</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <section className="institutional-panel overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-5">
+          <div>
+            <h3 className="text-[20px] font-semibold tracking-tight">Recent applications</h3>
+            <p className="text-[13px] text-on-surface-variant">Open a run to review materials or update status.</p>
+          </div>
+        </div>
+        <div className="divide-y divide-outline-variant/60">
+          {(applications || []).slice(0, 6).length === 0 ? (
+            <p className="px-6 py-10 text-center text-on-surface-variant">No applications yet.</p>
+          ) : (
+            applications.slice(0, 6).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-surface-container-low"
+                onClick={() => onOpenApplication(item)}
+              >
+                <div>
+                  <p className="font-semibold">{item.company}</p>
+                  <p className="text-[13px] text-on-surface-variant">{item.title || "Untitled role"}</p>
+                </div>
+                <span className={statusClass(item.status)}>{item.status}</span>
+              </button>
+            ))
+          )}
         </div>
       </section>
     </div>
