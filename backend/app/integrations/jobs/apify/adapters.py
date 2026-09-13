@@ -7,6 +7,7 @@ from backend.app.integrations.jobs.base import search_text
 
 DEFAULT_ACTOR = "khadinakbar/jobs-scraper"
 DEFAULT_PLATFORMS = ("indeed", "linkedin")
+BLOCKED_PLATFORMS = frozenset({"glassdoor"})
 COUNTRY_LABELS = {
     "us": "United States",
     "gb": "United Kingdom",
@@ -37,6 +38,15 @@ def profile_location(profile: CandidateProfile) -> str:
 
 def clamp_limit(limit: int, *, max_items: int = 50) -> int:
     return min(max(limit, 1), max(max_items, 1))
+
+
+def sanitize_platforms(platforms: list[str]) -> list[str]:
+    cleaned = [
+        item.strip().lower()
+        for item in platforms
+        if item.strip() and item.strip().lower() not in BLOCKED_PLATFORMS
+    ]
+    return cleaned or list(DEFAULT_PLATFORMS)
 
 
 class ActorAdapter(Protocol):
@@ -72,7 +82,7 @@ class JobsScraperAdapter:
         return {
             "searchQuery": search_text(profile),
             "location": profile_location(profile),
-            "platforms": platforms or list(DEFAULT_PLATFORMS),
+            "platforms": sanitize_platforms(platforms),
             "maxResults": clamp_limit(limit, max_items=max_items),
             "jobType": "all",
             "isRemote": profile.work_mode == "remote",

@@ -55,6 +55,8 @@ def map_apify_record(item: Any, *, actor: str) -> NormalizedJob | None:
     if not title and not url:
         return None
     platform = _first(item, "platform", "source") or actor_key(actor).rsplit("/", 1)[-1]
+    if "glassdoor" in platform.lower() or "glassdoor." in url.lower():
+        return None
     return NormalizedJob(
         source="apify",
         external_id=f"{platform}:{external_id}",

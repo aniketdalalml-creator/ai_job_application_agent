@@ -11,6 +11,12 @@ from backend.app.schemas import ManualJobIn
 from backend.app.workers.queue import enqueue
 
 
+def _is_blocked_posting(item: dict) -> bool:
+    board = (item.get("external_id") or "").split(":", 1)[0].lower()
+    url = (item.get("url") or "").lower()
+    return board == "glassdoor" or "glassdoor." in url
+
+
 def _serialize_job(job: Job, fit, application: Application | None) -> dict:
     return {
         "id": job.id,
@@ -58,6 +64,7 @@ def list_jobs(
     fits = matches.latest_for_user(user.id)
     app_by_job = {item.job_id: item for item in applications.list_for_user(user.id)}
     payload = [_serialize_job(job, fits.get(job.id), app_by_job.get(job.id)) for job in rows]
+    payload = [item for item in payload if not _is_blocked_posting(item)]
     if recommendation:
         payload = [item for item in payload if (item["fit"] or {}).get("recommendation") == recommendation.upper()]
     if min_score is not None:

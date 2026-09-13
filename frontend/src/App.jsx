@@ -439,9 +439,7 @@ export default function App() {
           setFilter={setJobFilter}
           searching={searching}
           error={feedError}
-          hasResume={hasResume}
           onSearch={handleFindJobs}
-          onPrepare={handlePrepare}
         />
       );
     }
@@ -497,7 +495,9 @@ export default function App() {
   }
 
   const sidebarView =
-    activeView === "processing" || activeView === "results" ? "applications" : activeView;
+    activeView === "processing" || activeView === "results" || activeView === "applications"
+      ? "jobs"
+      : activeView;
 
   return (
     <div className="min-h-screen bg-surface">

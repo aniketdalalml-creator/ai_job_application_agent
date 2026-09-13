@@ -3,11 +3,9 @@ import JobCard from "./JobCard";
 
 type JobListProps = {
   jobs: Job[];
-  hasResume: boolean;
-  onPrepare: (job: Job) => void;
 };
 
-export default function JobList({ jobs, hasResume, onPrepare }: JobListProps) {
+export default function JobList({ jobs }: JobListProps) {
   if (jobs.length === 0) {
     return (
       <div className="institutional-panel p-10 text-center text-on-surface-variant">
@@ -19,7 +17,7 @@ export default function JobList({ jobs, hasResume, onPrepare }: JobListProps) {
   return (
     <div className="grid w-full grid-cols-1 gap-4">
       {jobs.map((job) => (
-        <JobCard key={job.id} job={job} hasResume={hasResume} onPrepare={onPrepare} />
+        <JobCard key={job.id} job={job} />
       ))}
     </div>
   );

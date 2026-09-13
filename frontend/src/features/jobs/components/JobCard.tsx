@@ -59,11 +59,9 @@ function ScoreBar({ label, value }: { label: string; value?: number }) {
 
 type JobCardProps = {
   job: Job;
-  hasResume: boolean;
-  onPrepare: (job: Job) => void;
 };
 
-export default function JobCard({ job, hasResume, onPrepare }: JobCardProps) {
+export default function JobCard({ job }: JobCardProps) {
   const fit = job.fit;
   const scored = Boolean(fit && fit.overall_score != null);
   const badge = matchBadge(fit);
@@ -132,7 +130,7 @@ export default function JobCard({ job, hasResume, onPrepare }: JobCardProps) {
                   <dt className="text-on-surface-variant">Saved</dt>
                   <dd>{formatSavedAt(job.created_at)}</dd>
                 </div>
-                {job.url ? (
+                {job.url && !job.url.toLowerCase().includes("glassdoor.") ? (
                   <div className="flex justify-between gap-3">
                     <dt className="text-on-surface-variant">Original URL</dt>
                     <dd className="max-w-[60%] truncate">
@@ -147,18 +145,8 @@ export default function JobCard({ job, hasResume, onPrepare }: JobCardProps) {
           </div>
         </div>
         <div className="flex min-w-0 flex-col justify-center gap-2 lg:col-span-4">
-          {job.application_status ? <span className="status-completed text-center">{job.application_status}</span> : null}
-          <button
-            type="button"
-            className="btn-primary w-full"
-            onClick={() => onPrepare(job)}
-            disabled={!hasResume}
-            title={hasResume ? "Prepare application" : "Add a resume on your Profile first"}
-          >
-            Prepare application
-          </button>
-          {job.url ? (
-            <a className="btn-secondary w-full" href={job.url} target="_blank" rel="noreferrer">
+          {job.url && !job.url.toLowerCase().includes("glassdoor.") ? (
+            <a className="btn-primary w-full" href={job.url} target="_blank" rel="noreferrer">
               Open posting
             </a>
           ) : null}

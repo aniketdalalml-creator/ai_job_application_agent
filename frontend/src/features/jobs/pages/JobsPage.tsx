@@ -9,9 +9,7 @@ export type JobsPageProps = {
   setFilter: (filter: JobFilter) => void;
   searching: boolean;
   error: string;
-  hasResume: boolean;
   onSearch: () => void;
-  onPrepare: (job: Job) => void;
 };
 
 export default function JobsPage({
@@ -20,9 +18,7 @@ export default function JobsPage({
   setFilter,
   searching,
   error,
-  hasResume,
   onSearch,
-  onPrepare,
 }: JobsPageProps) {
   const { visibleJobs } = useJobs(jobs, filter);
 
@@ -40,7 +36,7 @@ export default function JobsPage({
           </div>
           <h2 className="text-[36px] font-bold leading-tight tracking-tight">Job matches</h2>
           <p className="mt-1 text-[15px] text-on-surface-variant">
-            Search uses your saved profile. Each posting is scored APPLY / MAYBE / SKIP before you prepare materials.
+            Search uses your saved profile. Each posting is scored APPLY / MAYBE / SKIP.
           </p>
         </div>
         <button type="button" className="btn-primary" onClick={onSearch} disabled={searching}>
@@ -52,11 +48,8 @@ export default function JobsPage({
       <JobFilters filter={filter} onChange={setFilter} />
 
       {error ? <p className="text-[13px] font-medium text-error">{error}</p> : null}
-      {!hasResume ? (
-        <p className="text-[13px] text-on-surface-variant">Add a resume on your Profile before preparing an application.</p>
-      ) : null}
 
-      <JobList jobs={visibleJobs} hasResume={hasResume} onPrepare={onPrepare} />
+      <JobList jobs={visibleJobs} />
     </div>
   );
 }

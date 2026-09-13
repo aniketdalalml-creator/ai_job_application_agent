@@ -98,6 +98,31 @@ def test_normalize_khadinakbar_item() -> None:
     assert job.description == "Python and FastAPI"
 
 
+def test_normalize_skips_glassdoor() -> None:
+    job = map_apify_record(
+        {
+            "job_title": "Software Engineer II",
+            "company_name": "Penske",
+            "apply_url": "https://www.glassdoor.co.in/job-listing/software-engineer.htm",
+            "platform": "glassdoor",
+            "id": "123",
+        },
+        actor="khadinakbar/jobs-scraper",
+    )
+    assert job is None
+
+
+def test_actor_input_drops_glassdoor() -> None:
+    profile = CandidateProfile(target_titles=["Engineer"], locations=["India"])
+    payload = build_actor_input(
+        "khadinakbar/jobs-scraper",
+        profile,
+        limit=10,
+        platforms=["indeed", "glassdoor", "linkedin"],
+    )
+    assert payload["platforms"] == ["indeed", "linkedin"]
+
+
 def test_normalize_generic_item_hashes_url() -> None:
     job = map_apify_record(
         {"title": "Analyst", "company": "Globex", "url": "https://indeed.com/viewjob?jk=abc"},

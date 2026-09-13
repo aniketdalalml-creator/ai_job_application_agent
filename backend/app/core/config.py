@@ -48,10 +48,14 @@ class Settings:
         ).strip()
         self.apify_linkedin_actor_id = os.getenv("APIFY_LINKEDIN_ACTOR_ID", "").strip()
         self.apify_actors = _csv(os.getenv("APIFY_ACTORS", ""))
-        self.apify_platforms = _csv(
-            os.getenv("APIFY_PLATFORMS", "indeed,linkedin"),
-            default=["indeed", "linkedin"],
-        )
+        self.apify_platforms = [
+            item
+            for item in _csv(
+                os.getenv("APIFY_PLATFORMS", "indeed,linkedin"),
+                default=["indeed", "linkedin"],
+            )
+            if item.lower() != "glassdoor"
+        ] or ["indeed", "linkedin"]
         self.apify_timeout_seconds = _int("APIFY_TIMEOUT_SECONDS", 180, min_value=30, max_value=300)
         self.apify_request_timeout_seconds = _int("APIFY_REQUEST_TIMEOUT_SECONDS", 30, min_value=5, max_value=90)
         self.apify_poll_interval_seconds = _int("APIFY_POLL_INTERVAL_SECONDS", 3, min_value=1, max_value=15)
